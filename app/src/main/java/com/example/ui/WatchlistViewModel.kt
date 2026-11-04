@@ -197,6 +197,14 @@ class WatchlistViewModel(
 
     fun selectItem(item: WatchlistItem?) {
         _selectedItem.value = item
+        if (item != null) {
+            viewModelScope.launch {
+                val refreshed = repository.refreshProviders(item)
+                if (_selectedItem.value?.id == item.id) {
+                    _selectedItem.value = refreshed
+                }
+            }
+        }
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -338,14 +346,19 @@ class WatchlistViewModel(
 
     fun playOnProvider(item: WatchlistItem) {
         val providerName = item.primaryProviderName ?: "Streaming"
+        playOnProviderPlatform(item, providerName)
+    }
+
+    fun playOnProviderPlatform(item: WatchlistItem, providerName: String) {
         val known = KnownProviders.ALL_PROVIDERS.firstOrNull { prov ->
-            prov.tmdbProviderNames.any { providerName.contains(it, ignoreCase = true) }
+            prov.tmdbProviderNames.any { providerName.contains(it, ignoreCase = true) } ||
+                    providerName.contains(prov.name, ignoreCase = true)
         }
         viewModelScope.launch {
             _events.emit(
                 UiEvent.LaunchProviderApp(
                     packageName = known?.appPackageName,
-                    fallbackUrl = known?.webFallbackUrl ?: "https://www.google.com/search?q=${item.title}+streamen"
+                    fallbackUrl = known?.webFallbackUrl ?: "https://www.google.com/search?q=${item.title}+${providerName}+streamen"
                 )
             )
         }

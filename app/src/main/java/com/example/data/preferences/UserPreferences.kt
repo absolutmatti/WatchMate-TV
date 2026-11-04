@@ -110,7 +110,9 @@ class UserPreferences(context: Context) {
     private val _region = MutableStateFlow(prefs.getString(KEY_REGION, "DE") ?: "DE")
     val region: StateFlow<String> = _region.asStateFlow()
 
-    private val _apiKey = MutableStateFlow(prefs.getString(KEY_API_KEY, "") ?: "")
+    private val _apiKey = MutableStateFlow(
+        prefs.getString(KEY_API_KEY, null) ?: DEFAULT_KEY
+    )
     val apiKey: StateFlow<String> = _apiKey.asStateFlow()
 
     private fun loadSubscribedProviders(): Set<String> {
@@ -144,6 +146,7 @@ class UserPreferences(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_SEEDED, value).apply()
 
     companion object {
+        const val DEFAULT_KEY = "1b490ff6b2d76245e0c8503271f5f094"
         private const val KEY_PROVIDERS = "subscribed_providers"
         private const val KEY_REGION = "tmdb_region"
         private const val KEY_API_KEY = "tmdb_api_key"

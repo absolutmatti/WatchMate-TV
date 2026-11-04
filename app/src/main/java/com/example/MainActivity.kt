@@ -154,6 +154,7 @@ fun WatchMateTvApp(viewModel: WatchlistViewModel) {
                         onBack = { viewModel.selectItem(null) },
                         onAddToList = { viewModel.addToWatchlist(it) },
                         onPlayOnProvider = { viewModel.playOnProvider(it) },
+                        onPlayOnProviderPlatform = { platformName -> viewModel.playOnProviderPlatform(item, platformName) },
                         onOpenTrailer = { viewModel.openTrailer(it) },
                         onAdvanceEpisode = { viewModel.advanceEpisode(it) },
                         onOpenStatusDialog = { viewModel.statusChangeDialogItem.value = it },

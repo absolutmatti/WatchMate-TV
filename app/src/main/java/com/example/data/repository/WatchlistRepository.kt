@@ -156,23 +156,21 @@ class WatchlistRepository(
 
     suspend fun searchTitles(query: String): List<TMDbSearchItem> {
         if (query.isBlank()) return emptyList()
-        val key = preferences.apiKey.value
+        val key = preferences.apiKey.value.ifBlank { TMDbApiService.DEFAULT_API_KEY }
         val region = preferences.region.value
 
         return withContext(Dispatchers.IO) {
-            if (key.isNotBlank()) {
-                try {
-                    val lang = if (region.equals("AT", true)) "de-AT" else if (region.equals("CH", true)) "de-CH" else "de-DE"
-                    val response = apiService.searchMulti(query = query, apiKey = key, language = lang)
-                    val filtered = response.results.filter {
-                        it.mediaType == "movie" || it.mediaType == "tv"
-                    }
-                    if (filtered.isNotEmpty()) {
-                        return@withContext filtered
-                    }
-                } catch (e: Exception) {
-                    Log.e("WatchlistRepository", "TMDb API search failed: ${e.message}")
+            try {
+                val lang = if (region.equals("AT", true)) "de-AT" else if (region.equals("CH", true)) "de-CH" else "de-DE"
+                val response = apiService.searchMulti(query = query, apiKey = key, language = lang)
+                val filtered = response.results.filter {
+                    it.mediaType == "movie" || it.mediaType == "tv"
                 }
+                if (filtered.isNotEmpty()) {
+                    return@withContext filtered
+                }
+            } catch (e: Exception) {
+                Log.e("WatchlistRepository", "TMDb API search failed: ${e.message}")
             }
             // Fallback to sample catalog search
             SampleDataProvider.searchSampleCatalog(query).map { item ->
@@ -198,24 +196,22 @@ class WatchlistRepository(
         val existing = dao.getItemByIdDirect(searchItem.id)
         if (existing != null) return existing
 
-        val key = preferences.apiKey.value
+        val key = preferences.apiKey.value.ifBlank { TMDbApiService.DEFAULT_API_KEY }
         val region = preferences.region.value
         val isTv = searchItem.resolvedMediaType == "tv"
 
         return withContext(Dispatchers.IO) {
-            if (key.isNotBlank()) {
-                try {
-                    val lang = if (region.equals("AT", true)) "de-AT" else if (region.equals("CH", true)) "de-CH" else "de-DE"
-                    if (isTv) {
-                        val tv = apiService.getTvDetails(searchItem.id, key, language = lang)
-                        return@withContext convertTvToWatchlist(tv)
-                    } else {
-                        val movie = apiService.getMovieDetails(searchItem.id, key, language = lang)
-                        return@withContext convertMovieToWatchlist(movie)
-                    }
-                } catch (e: Exception) {
-                    Log.e("WatchlistRepository", "Failed to fetch details from TMDb: ${e.message}")
+            try {
+                val lang = if (region.equals("AT", true)) "de-AT" else if (region.equals("CH", true)) "de-CH" else "de-DE"
+                if (isTv) {
+                    val tv = apiService.getTvDetails(searchItem.id, key, language = lang)
+                    return@withContext convertTvToWatchlist(tv)
+                } else {
+                    val movie = apiService.getMovieDetails(searchItem.id, key, language = lang)
+                    return@withContext convertMovieToWatchlist(movie)
                 }
+            } catch (e: Exception) {
+                Log.e("WatchlistRepository", "Failed to fetch details from TMDb: ${e.message}")
             }
 
             // Fallback construction
@@ -355,15 +351,39 @@ class WatchlistRepository(
         )
     }
 
+    suspend fun refreshProviders(item: WatchlistItem): WatchlistItem {
+        return withContext(Dispatchers.IO) {
+            try {
+                val key = preferences.apiKey.value.ifBlank { TMDbApiService.DEFAULT_API_KEY }
+                val results = if (item.isTv) {
+                    apiService.getTvWatchProviders(item.id, key).results
+                } else {
+                    apiService.getMovieWatchProviders(item.id, key).results
+                }
+                val details = extractProviderDetails(results)
+                val json = serializeProvidersJson(details)
+                val updated = item.copy(
+                    providersJson = json,
+                    primaryProviderName = details.primaryProviderName ?: item.primaryProviderName,
+                    primaryProviderLogo = details.primaryProviderLogo ?: item.primaryProviderLogo
+                )
+                dao.update(updated)
+                updated
+            } catch (e: Exception) {
+                Log.e("WatchlistRepository", "Error refreshing providers: ${e.message}")
+                item
+            }
+        }
+    }
+
     private fun serializeProvidersJson(details: ProviderDetails): String {
         val array = JSONArray()
-        details.inUserSubscriptions.forEach { (name, logo) ->
-            array.put(JSONObject().put("name", name).put("logo", logo).put("type", "sub"))
-        }
-        details.otherFlatrates.forEach { (name, logo) ->
+        // Save flatrate providers
+        (details.inUserSubscriptions + details.otherFlatrates).distinctBy { it.first }.forEach { (name, logo) ->
             array.put(JSONObject().put("name", name).put("logo", logo).put("type", "flatrate"))
         }
-        details.buyOrRent.forEach { (name, logo) ->
+        // Save buy/rent providers
+        details.buyOrRent.distinctBy { it.first }.forEach { (name, logo) ->
             array.put(JSONObject().put("name", name).put("logo", logo).put("type", "buy_rent"))
         }
         return array.toString()

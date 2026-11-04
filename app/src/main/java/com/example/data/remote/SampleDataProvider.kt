@@ -30,7 +30,7 @@ object SampleDataProvider {
                 trailerYoutubeKey = "xEQP4VVuyrY",
                 primaryProviderName = "Apple TV+",
                 primaryProviderLogo = "/6uhKBfmtzFqOcLousVO0ZNVdaSg.jpg",
-                providersJson = """[{"id":"appletv","name":"Apple TV+","type":"flatrate"}]"""
+                providersJson = """[{"name":"Apple TV+","logo":"/6uhKBfmtzFqOcLousVO0ZNVdaSg.jpg","type":"flatrate"},{"name":"Amazon Prime Video","logo":"/gMZdpavHmxFNnLpMHwVxfqeux2g.png","type":"flatrate"}]"""
             ),
 
             // TV Series: Stranger Things (WATCHING)
@@ -55,8 +55,8 @@ object SampleDataProvider {
                 lastWatchedAt = now - 3600000L * 8,
                 trailerYoutubeKey = "b9EkMc79ZSU",
                 primaryProviderName = "Netflix",
-                primaryProviderLogo = "/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg",
-                providersJson = """[{"id":"netflix","name":"Netflix","type":"flatrate"}]"""
+                primaryProviderLogo = "/rK1KljqmbvO9HQa1PBFLILWah72.png",
+                providersJson = """[{"name":"Netflix","logo":"/rK1KljqmbvO9HQa1PBFLILWah72.png","type":"flatrate"}]"""
             ),
 
             // Movie: Dune: Part Two (PLAN_TO_WATCH)
@@ -76,9 +76,9 @@ object SampleDataProvider {
                 addedAt = now - 86400000L * 2,
                 lastWatchedAt = 0,
                 trailerYoutubeKey = "Way9Dexny3w",
-                primaryProviderName = "Amazon Prime Video",
-                primaryProviderLogo = "/emthp39XA2zhzgTvILbg2DE0SCe.jpg",
-                providersJson = """[{"id":"prime","name":"Amazon Prime Video","type":"flatrate"},{"id":"wow","name":"WOW","type":"flatrate"}]"""
+                primaryProviderName = "Netflix",
+                primaryProviderLogo = "/rK1KljqmbvO9HQa1PBFLILWah72.png",
+                providersJson = """[{"name":"Netflix","logo":"/rK1KljqmbvO9HQa1PBFLILWah72.png","type":"flatrate"},{"name":"RTL+","logo":"/er0P3HwuVruKgnOqF8CoNdAAPPD.png","type":"flatrate"},{"name":"Amazon Prime Video","logo":"/gMZdpavHmxFNnLpMHwVxfqeux2g.png","type":"flatrate"},{"name":"Apple TV Store","logo":"/qdEGArH3lKfFnAtYXMkSYk5wxuG.png","type":"buy_rent"},{"name":"Amazon Video","logo":"/jn6TLbtaTZntTRX9UYucHJvpQx1.png","type":"buy_rent"},{"name":"YouTube","logo":"/5Maob4o5w8oZnNeYpCDyVFD3M7X.png","type":"buy_rent"}]"""
             ),
 
             // Movie: Oppenheimer (PLAN_TO_WATCH)
@@ -100,7 +100,7 @@ object SampleDataProvider {
                 trailerYoutubeKey = "uYPbbksJxIg",
                 primaryProviderName = "WOW / Sky",
                 primaryProviderLogo = "/6uhKBfmtzFqOcLousVO0ZNVdaSg.jpg",
-                providersJson = """[{"id":"wow","name":"WOW","type":"flatrate"}]"""
+                providersJson = """[{"name":"WOW / Sky","logo":"/6uhKBfmtzFqOcLousVO0ZNVdaSg.jpg","type":"flatrate"},{"name":"Amazon Prime Video","logo":"/gMZdpavHmxFNnLpMHwVxfqeux2g.png","type":"flatrate"},{"name":"Apple TV Store","logo":"/qdEGArH3lKfFnAtYXMkSYk5wxuG.png","type":"buy_rent"},{"name":"Amazon Video","logo":"/jn6TLbtaTZntTRX9UYucHJvpQx1.png","type":"buy_rent"}]"""
             ),
 
             // TV Series: Arcane (PLAN_TO_WATCH)
@@ -125,8 +125,8 @@ object SampleDataProvider {
                 lastWatchedAt = 0,
                 trailerYoutubeKey = "fXmAurh012s",
                 primaryProviderName = "Netflix",
-                primaryProviderLogo = "/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg",
-                providersJson = """[{"id":"netflix","name":"Netflix","type":"flatrate"}]"""
+                primaryProviderLogo = "/rK1KljqmbvO9HQa1PBFLILWah72.png",
+                providersJson = """[{"name":"Netflix","logo":"/rK1KljqmbvO9HQa1PBFLILWah72.png","type":"flatrate"}]"""
             ),
 
             // Movie: Inception (WATCHED)
@@ -146,9 +146,9 @@ object SampleDataProvider {
                 addedAt = now - 86400000L * 20,
                 lastWatchedAt = now - 86400000L * 15,
                 trailerYoutubeKey = "YoHD9XEInc0",
-                primaryProviderName = "Netflix",
-                primaryProviderLogo = "/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg",
-                providersJson = """[{"id":"netflix","name":"Netflix","type":"flatrate"}]"""
+                primaryProviderName = "Amazon Prime Video",
+                primaryProviderLogo = "/gMZdpavHmxFNnLpMHwVxfqeux2g.png",
+                providersJson = """[{"name":"Amazon Prime Video","logo":"/gMZdpavHmxFNnLpMHwVxfqeux2g.png","type":"flatrate"},{"name":"RTL+","logo":"/er0P3HwuVruKgnOqF8CoNdAAPPD.png","type":"flatrate"},{"name":"Apple TV Store","logo":"/qdEGArH3lKfFnAtYXMkSYk5wxuG.png","type":"buy_rent"},{"name":"Amazon Video","logo":"/jn6TLbtaTZntTRX9UYucHJvpQx1.png","type":"buy_rent"},{"name":"YouTube","logo":"/5Maob4o5w8oZnNeYpCDyVFD3M7X.png","type":"buy_rent"}]"""
             ),
 
             // TV Series: Breaking Bad (WATCHED)
@@ -173,8 +173,8 @@ object SampleDataProvider {
                 lastWatchedAt = now - 86400000L * 25,
                 trailerYoutubeKey = "HhesaQXLuRY",
                 primaryProviderName = "Netflix",
-                primaryProviderLogo = "/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg",
-                providersJson = """[{"id":"netflix","name":"Netflix","type":"flatrate"}]"""
+                primaryProviderLogo = "/rK1KljqmbvO9HQa1PBFLILWah72.png",
+                providersJson = """[{"name":"Netflix","logo":"/rK1KljqmbvO9HQa1PBFLILWah72.png","type":"flatrate"},{"name":"Apple TV Store","logo":"/qdEGArH3lKfFnAtYXMkSYk5wxuG.png","type":"buy_rent"},{"name":"Amazon Video","logo":"/jn6TLbtaTZntTRX9UYucHJvpQx1.png","type":"buy_rent"}]"""
             )
         )
     }

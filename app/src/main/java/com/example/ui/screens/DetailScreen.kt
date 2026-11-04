@@ -3,6 +3,10 @@ package com.example.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +42,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,6 +77,7 @@ fun DetailScreen(
     onBack: () -> Unit,
     onAddToList: (WatchlistItem) -> Unit,
     onPlayOnProvider: (WatchlistItem) -> Unit,
+    onPlayOnProviderPlatform: (String) -> Unit,
     onOpenTrailer: (String) -> Unit,
     onAdvanceEpisode: (WatchlistItem) -> Unit,
     onOpenStatusDialog: (WatchlistItem) -> Unit,
@@ -81,10 +88,25 @@ fun DetailScreen(
     val scrollState = rememberScrollState()
 
     // Parse providers from JSON
-    val providerList = parseProvidersJson(item.providersJson)
-    val inUserSubs = providerList.filter { it.type == "sub" || KnownProviders.matchesAny(it.name, subscribedProviders) }
-    val otherFlats = providerList.filter { it.type == "flatrate" && !KnownProviders.matchesAny(it.name, subscribedProviders) }
-    val buyRent = providerList.filter { it.type == "buy_rent" }
+    val parsedProviders = parseProvidersJson(item.providersJson)
+    val allProviders = if (parsedProviders.isNotEmpty()) {
+        parsedProviders
+    } else if (!item.primaryProviderName.isNullOrBlank()) {
+        listOf(
+            ParsedProvider(
+                name = item.primaryProviderName,
+                logo = item.primaryProviderLogo,
+                type = "flatrate"
+            )
+        )
+    } else {
+        emptyList()
+    }
+
+    val flatrateProviders = allProviders.filter { it.type == "flatrate" || it.type == "sub" }
+        .distinctBy { it.name }
+    val buyRentProviders = allProviders.filter { it.type == "buy_rent" }
+        .distinctBy { it.name }
 
     Box(modifier = modifier.fillMaxSize()) {
         // High-resolution cinematic backdrop image as background
@@ -359,13 +381,12 @@ fun DetailScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    // STREAMING PROVIDERS SECTION
+                    // STREAMING PROVIDERS SECTION (Shows exact platforms with logos and subscription badges)
                     StreamingProvidersSection(
-                        inUserSubs = inUserSubs,
-                        otherFlats = otherFlats,
-                        buyRent = buyRent,
-                        primaryName = item.primaryProviderName,
-                        primaryLogo = item.primaryProviderLogo
+                        flatrateProviders = flatrateProviders,
+                        buyRentProviders = buyRentProviders,
+                        subscribedProviders = subscribedProviders,
+                        onLaunchProvider = onPlayOnProviderPlatform
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -398,13 +419,16 @@ fun parseProvidersJson(json: String?): List<ParsedProvider> {
         val array = JSONArray(json)
         for (i in 0 until array.length()) {
             val obj = array.getJSONObject(i)
-            list.add(
-                ParsedProvider(
-                    name = obj.optString("name"),
-                    logo = obj.optString("logo").takeIf { it.isNotBlank() },
-                    type = obj.optString("type")
+            val name = obj.optString("name")
+            if (name.isNotBlank()) {
+                list.add(
+                    ParsedProvider(
+                        name = name,
+                        logo = obj.optString("logo").takeIf { it.isNotBlank() },
+                        type = obj.optString("type", "flatrate")
+                    )
                 )
-            )
+            }
         }
     } catch (e: Exception) {
         // Fallback
@@ -412,107 +436,100 @@ fun parseProvidersJson(json: String?): List<ParsedProvider> {
     return list
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StreamingProvidersSection(
-    inUserSubs: List<ParsedProvider>,
-    otherFlats: List<ParsedProvider>,
-    buyRent: List<ParsedProvider>,
-    primaryName: String?,
-    primaryLogo: String?
+    flatrateProviders: List<ParsedProvider>,
+    buyRentProviders: List<ParsedProvider>,
+    subscribedProviders: Set<String>,
+    onLaunchProvider: (String) -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp)),
+            .clip(RoundedCornerShape(14.dp)),
         color = TvSurface,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Streaming-Verfügbarkeit",
-                color = CyanNeon,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tv,
+                    contentDescription = null,
+                    tint = CyanNeon,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Streaming-Verfügbarkeit & Plattformen",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 1. In deinen Abos enthalten
-            if (inUserSubs.isNotEmpty() || (!primaryName.isNullOrBlank() && inUserSubs.isEmpty() && otherFlats.isEmpty())) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 4.dp)
+            // 1. Flatrate Streaming Platforms (Im Abo ansehen)
+            if (flatrateProviders.isNotEmpty()) {
+                Text(
+                    text = "🍿 Flatrate-Streaming (Im Abo ansehen):",
+                    color = CyanNeon,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Surface(
-                        color = Color(0x3310B981),
-                        shape = RoundedCornerShape(4.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, GreenWatched)
-                    ) {
-                        Text(
-                            text = "In deinen Abos ✓",
-                            color = GreenWatched,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    flatrateProviders.forEach { prov ->
+                        val isSubscribed = KnownProviders.matchesAny(prov.name, subscribedProviders)
+                        TvProviderCard(
+                            provider = prov,
+                            isSubscribed = isSubscribed,
+                            onClick = { onLaunchProvider(prov.name) }
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    val displayProviders = if (inUserSubs.isNotEmpty()) inUserSubs else listOf(
-                        ParsedProvider(name = primaryName ?: "", logo = primaryLogo, type = "sub")
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        displayProviders.forEach { prov ->
-                            ProviderChip(name = prov.name, logo = prov.logo, isHighlight = true)
-                        }
-                    }
                 }
             }
 
-            // 2. Andere Flatrates
-            if (otherFlats.isNotEmpty()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "Andere Flatrates:",
-                        color = Color.LightGray,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.width(110.dp)
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        otherFlats.take(4).forEach { prov ->
-                            ProviderChip(name = prov.name, logo = prov.logo, isHighlight = false)
-                        }
-                    }
+            // 2. Buy / Rent Platforms (VoD)
+            if (buyRentProviders.isNotEmpty()) {
+                if (flatrateProviders.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(14.dp))
                 }
-            }
-
-            // 3. Kaufen & Leihen
-            if (buyRent.isNotEmpty()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "Kaufen / Leihen:",
-                        color = Color.Gray,
-                        fontSize = 12.sp,
-                        modifier = Modifier.width(110.dp)
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        buyRent.take(4).forEach { prov ->
-                            ProviderChip(name = prov.name, logo = prov.logo, isHighlight = false)
-                        }
-                    }
-                }
-            }
-
-            if (inUserSubs.isEmpty() && otherFlats.isEmpty() && buyRent.isEmpty() && primaryName.isNullOrBlank()) {
                 Text(
-                    text = "Keine Flatrate-Streaming-Informationen für diese Region hinterlegt.",
+                    text = "🛒 Kaufen & Leihen (VoD):",
+                    color = Color.LightGray,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    buyRentProviders.take(6).forEach { prov ->
+                        TvVodProviderCard(
+                            provider = prov,
+                            onClick = { onLaunchProvider(prov.name) }
+                        )
+                    }
+                }
+            }
+
+            if (flatrateProviders.isEmpty() && buyRentProviders.isEmpty()) {
+                Text(
+                    text = "Für diese Region sind aktuell keine Streaming- oder VoD-Plattformen hinterlegt.",
                     color = Color.Gray,
                     fontSize = 13.sp
                 )
@@ -522,35 +539,128 @@ fun StreamingProvidersSection(
 }
 
 @Composable
-fun ProviderChip(name: String, logo: String?, isHighlight: Boolean) {
+fun TvProviderCard(
+    provider: ParsedProvider,
+    isSubscribed: Boolean,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    val borderColor = when {
+        isFocused -> CyanNeon
+        isSubscribed -> GreenWatched
+        else -> Color(0xFF334155)
+    }
+
+    val borderWidth = if (isFocused) 2.5.dp else if (isSubscribed) 1.5.dp else 1.dp
+    val bgColor = if (isFocused) Color(0xFF1E2D4A) else if (isSubscribed) Color(0xFF132A26) else TvCardBg
+
     Surface(
-        color = if (isHighlight) Color(0xFF1E293B) else Color(0xFF0F172A),
-        shape = RoundedCornerShape(6.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (isHighlight) CyanPrimary else Color(0xFF334155)
-        )
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .border(borderWidth, borderColor, RoundedCornerShape(10.dp))
+            .focusable(interactionSource = interactionSource)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
+        color = bgColor,
+        shape = RoundedCornerShape(10.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (!logo.isNullOrBlank()) {
-                val fullUrl = if (logo.startsWith("http")) logo else "https://image.tmdb.org/t/p/w92$logo"
+            // Provider Logo
+            if (!provider.logo.isNullOrBlank()) {
+                val fullUrl = if (provider.logo.startsWith("http")) provider.logo else "https://image.tmdb.org/t/p/w92${provider.logo}"
                 AsyncImage(
                     model = fullUrl,
-                    contentDescription = name,
+                    contentDescription = provider.name,
                     modifier = Modifier
-                        .size(16.dp)
-                        .clip(CircleShape)
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(4.dp))
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // Platform Name
+            Text(
+                text = provider.name,
+                color = if (isFocused) CyanNeon else Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Badge
+            if (isSubscribed) {
+                Surface(
+                    color = GreenWatched,
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "In deinem Abo ✓",
+                        color = Color.Black,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
+            } else {
+                Surface(
+                    color = Color(0x3306B6D4),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "Flatrate",
+                        color = CyanNeon,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TvVodProviderCard(
+    provider: ParsedProvider,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .border(1.dp, Color(0xFF334155), RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+        color = TvCardBg,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (!provider.logo.isNullOrBlank()) {
+                val fullUrl = if (provider.logo.startsWith("http")) provider.logo else "https://image.tmdb.org/t/p/w92${provider.logo}"
+                AsyncImage(
+                    model = fullUrl,
+                    contentDescription = provider.name,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                )
+                Spacer(modifier = Modifier.width(6.dp))
             }
             Text(
-                text = name,
-                color = if (isHighlight) CyanNeon else Color.White,
+                text = provider.name,
+                color = Color(0xFFE2E8F0),
                 fontSize = 12.sp,
-                fontWeight = if (isHighlight) FontWeight.Bold else FontWeight.Normal
+                fontWeight = FontWeight.Medium
             )
         }
     }
