@@ -122,7 +122,7 @@ fun HomeScreen(
                     .fillMaxSize()
                     .testTag("watchlist_grid")
             ) {
-                items(items, key = { it.id }) { item ->
+                items(items, key = { it.id }, contentType = { "poster_card" }) { item ->
                     val isSubscribed = item.primaryProviderName != null &&
                             com.example.data.preferences.KnownProviders.matchesAny(
                                 item.primaryProviderName,
@@ -188,7 +188,7 @@ fun TvNavigationBar(
                 val isSelected = currentTab == tab
                 val interactionSource = remember { MutableInteractionSource() }
                 val isFocused by interactionSource.collectIsFocusedAsState()
-                val tabScale by animateFloatAsState(if (isFocused) 1.08f else 1.0f, label = "tabScale")
+                val tabScale = if (isFocused) 1.06f else 1.0f
 
                 val bgColor = when {
                     isSelected -> CyanPrimary
@@ -219,7 +219,6 @@ fun TvNavigationBar(
                             indication = null,
                             onClick = { onTabSelected(tab) }
                         )
-                        .shadow(if (isFocused) 10.dp else 0.dp, RoundedCornerShape(10.dp))
                         .testTag("nav_tab_${tab.name}"),
                     color = bgColor,
                     shape = RoundedCornerShape(10.dp)

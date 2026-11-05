@@ -84,25 +84,16 @@ fun TvPosterCard(
     val isWatched = item.status == WatchlistItem.STATUS_WATCHED
     val isDropped = item.status == WatchlistItem.STATUS_DROPPED
 
-    // Animated scale and border on focus
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.08f else 1.0f,
-        animationSpec = tween(durationMillis = 180),
-        label = "posterScale"
-    )
+    val scale = if (isFocused) 1.05f else 1.0f
 
-    val borderColor by animateColorAsState(
-        targetValue = when {
-            isFocused -> TvFocusBorder
-            isWatching -> CyanNeon
-            isWatched -> GreenWatched.copy(alpha = 0.5f)
-            else -> Color.Transparent
-        },
-        animationSpec = tween(durationMillis = 180),
-        label = "posterBorder"
-    )
+    val borderColor = when {
+        isFocused -> TvFocusBorder
+        isWatching -> CyanNeon
+        isWatched -> GreenWatched.copy(alpha = 0.5f)
+        else -> Color.Transparent
+    }
 
-    val borderWidth = if (isFocused) 4.dp else if (isWatching) 2.dp else 0.dp
+    val borderWidth = if (isFocused) 3.5.dp else if (isWatching) 2.dp else 0.dp
 
     Column(
         modifier = modifier
@@ -126,10 +117,9 @@ fun TvPosterCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick
-                )
-                .shadow(if (isFocused) 16.dp else 4.dp, RoundedCornerShape(12.dp)),
+                ),
             colors = CardDefaults.cardColors(
-                containerColor = if (isFocused) TvCardFocused else TvCardBg
+                containerColor = if (isFocused) TvFocusBg else TvCardBg
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -350,11 +340,7 @@ fun TvButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.09f else 1.0f,
-        animationSpec = tween(150),
-        label = "btnScale"
-    )
+    val scale = if (isFocused) 1.06f else 1.0f
 
     val bgColor = when {
         !enabled -> Color.DarkGray
@@ -393,8 +379,7 @@ fun TvButton(
         color = bgColor,
         contentColor = contentColor,
         shape = RoundedCornerShape(8.dp),
-        border = borderStroke,
-        shadowElevation = if (isFocused) 14.dp else 2.dp
+        border = borderStroke
     ) {
         Box(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),

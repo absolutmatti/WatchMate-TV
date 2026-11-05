@@ -233,7 +233,7 @@ fun FilterChip(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val chipScale by animateFloatAsState(if (isFocused) 1.08f else 1.0f, label = "filterChipScale")
+    val chipScale = if (isFocused) 1.05f else 1.0f
 
     val bgColor = when {
         isFocused -> TvFocusBg
@@ -263,8 +263,7 @@ fun FilterChip(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            )
-            .shadow(if (isFocused) 8.dp else 0.dp, RoundedCornerShape(8.dp)),
+            ),
         color = bgColor,
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -321,7 +320,7 @@ fun StatusChangeDialog(
                     val isCurrent = item.status == statusKey
                     val itemInteraction = remember { MutableInteractionSource() }
                     val isItemFocused by itemInteraction.collectIsFocusedAsState()
-                    val itemScale by animateFloatAsState(if (isItemFocused) 1.05f else 1.0f, label = "statusScale")
+                    val itemScale = if (isItemFocused) 1.04f else 1.0f
 
                     val itemBorderColor = when {
                         isItemFocused -> TvFocusBorder
@@ -353,8 +352,7 @@ fun StatusChangeDialog(
                             .clickable(
                                 interactionSource = itemInteraction,
                                 indication = null
-                            ) { onStatusSelected(statusKey) }
-                            .shadow(if (isItemFocused) 8.dp else 0.dp, RoundedCornerShape(8.dp)),
+                            ) { onStatusSelected(statusKey) },
                         color = itemBg,
                         shape = RoundedCornerShape(8.dp)
                     ) {

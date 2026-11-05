@@ -41,7 +41,7 @@ data class WatchlistItem(
 
     val posterUrl: String?
         get() = posterPath?.let {
-            if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w500$it"
+            if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w342$it"
         }
 
     val backdropUrl: String?

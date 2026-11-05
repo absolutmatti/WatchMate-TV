@@ -57,8 +57,12 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -103,6 +107,22 @@ fun SearchScreen(
     BackHandler { onBack() }
     val context = LocalContext.current
 
+    // Local decoupled text state for 0ms typing response without triggering whole-app recomposition
+    var localText by remember { mutableStateOf(searchQuery) }
+
+    LaunchedEffect(searchQuery) {
+        if (searchQuery != localText) {
+            localText = searchQuery
+        }
+    }
+
+    LaunchedEffect(localText) {
+        if (localText != searchQuery) {
+            delay(400)
+            onQueryChanged(localText)
+        }
+    }
+
     // Voice search launcher
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -110,6 +130,7 @@ fun SearchScreen(
         if (result.resultCode == Activity.RESULT_OK) {
             val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
             if (!spoken.isNullOrBlank()) {
+                localText = spoken
                 onQueryChanged(spoken)
                 onSearchSubmit(spoken)
             }
@@ -161,8 +182,8 @@ fun SearchScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onQueryChanged,
+                value = localText,
+                onValueChange = { localText = it },
                 placeholder = {
                     Text("Film oder Serie eingeben (z. B. Spid, Dune, Arcane)...", color = Color.Gray, fontSize = 14.sp)
                 },
@@ -170,15 +191,21 @@ fun SearchScreen(
                     Icon(Icons.Default.Search, contentDescription = null, tint = CyanNeon)
                 },
                 trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChanged("") }) {
+                    if (localText.isNotEmpty()) {
+                        IconButton(onClick = {
+                            localText = ""
+                            onQueryChanged("")
+                        }) {
                             Icon(Icons.Default.Clear, contentDescription = "Löschen", tint = Color.Gray)
                         }
                     }
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { onSearchSubmit(searchQuery) }),
+                keyboardActions = KeyboardActions(onSearch = {
+                    onQueryChanged(localText)
+                    onSearchSubmit(localText)
+                }),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = TvFocusBorder,
                     unfocusedBorderColor = Color(0xFF334155),
@@ -250,7 +277,7 @@ fun SearchScreen(
                 items(quickSearches) { suggestion ->
                     val chipInteraction = remember { MutableInteractionSource() }
                     val isChipFocused by chipInteraction.collectIsFocusedAsState()
-                    val chipScale by animateFloatAsState(if (isChipFocused) 1.08f else 1.0f, label = "chipScale")
+                    val chipScale = if (isChipFocused) 1.06f else 1.0f
 
                     Surface(
                         modifier = Modifier
@@ -269,6 +296,7 @@ fun SearchScreen(
                                 interactionSource = chipInteraction,
                                 indication = null
                             ) {
+                                localText = suggestion
                                 onQueryChanged(suggestion)
                                 onSearchSubmit(suggestion)
                             },
@@ -355,7 +383,7 @@ fun SearchScreen(
                     .fillMaxSize()
                     .testTag("search_results_grid")
             ) {
-                items(searchResults, key = { it.id }) { item ->
+                items(searchResults, key = { it.id }, contentType = { "search_card" }) { item ->
                     val isAlreadyInList = existingWatchlistIds.contains(item.id)
                     SearchResultCard(
                         item = item,
@@ -378,11 +406,7 @@ fun SearchResultCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.08f else 1.0f,
-        animationSpec = tween(durationMillis = 180),
-        label = "searchCardScale"
-    )
+    val scale = if (isFocused) 1.05f else 1.0f
 
     val posterUrl = item.posterPath?.let {
         if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w342$it"
@@ -404,7 +428,7 @@ fun SearchResultCard(
                 .aspectRatio(2f / 3f)
                 .clip(RoundedCornerShape(12.dp))
                 .border(
-                    width = if (isFocused) 4.dp else 1.dp,
+                    width = if (isFocused) 3.5.dp else 1.dp,
                     color = if (isFocused) TvFocusBorder else Color(0xFF334155),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -414,7 +438,6 @@ fun SearchResultCard(
                     indication = null,
                     onClick = onClick
                 )
-                .shadow(if (isFocused) 16.dp else 2.dp, RoundedCornerShape(12.dp))
                 .testTag("search_card_${item.id}"),
             colors = CardDefaults.cardColors(
                 containerColor = if (isFocused) TvFocusBg else TvCardBg

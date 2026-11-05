@@ -551,7 +551,7 @@ fun TvProviderCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val provScale by animateFloatAsState(if (isFocused) 1.08f else 1.0f, label = "provScale")
+    val provScale = if (isFocused) 1.06f else 1.0f
 
     val borderColor = when {
         isFocused -> TvFocusBorder
@@ -575,8 +575,7 @@ fun TvProviderCard(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            )
-            .shadow(if (isFocused) 12.dp else 2.dp, RoundedCornerShape(10.dp)),
+            ),
         color = bgColor,
         shape = RoundedCornerShape(10.dp)
     ) {
@@ -659,7 +658,7 @@ fun TvVodProviderCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val vodScale by animateFloatAsState(if (isFocused) 1.08f else 1.0f, label = "vodScale")
+    val vodScale = if (isFocused) 1.06f else 1.0f
 
     Surface(
         modifier = Modifier
@@ -678,8 +677,7 @@ fun TvVodProviderCard(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            )
-            .shadow(if (isFocused) 8.dp else 0.dp, RoundedCornerShape(8.dp)),
+            ),
         color = if (isFocused) TvFocusBg else TvCardBg,
         shape = RoundedCornerShape(8.dp)
     ) {

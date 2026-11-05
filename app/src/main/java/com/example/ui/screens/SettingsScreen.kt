@@ -155,7 +155,7 @@ fun SettingsScreen(
                             val isChecked = subscribedProviders.contains(provider.id)
                             val provInteraction = remember { MutableInteractionSource() }
                             val isProvFocused by provInteraction.collectIsFocusedAsState()
-                            val chipScale by animateFloatAsState(if (isProvFocused) 1.07f else 1.0f, label = "provScale")
+                            val chipScale = if (isProvFocused) 1.06f else 1.0f
 
                             val chipBorderColor = when {
                                 isProvFocused -> TvFocusBorder
@@ -186,7 +186,6 @@ fun SettingsScreen(
                                         interactionSource = provInteraction,
                                         indication = null
                                     ) { onToggleProvider(provider.id) }
-                                    .shadow(if (isProvFocused) 10.dp else 0.dp, RoundedCornerShape(10.dp))
                                     .testTag("provider_check_${provider.id}"),
                                 color = chipBg,
                                 shape = RoundedCornerShape(10.dp)
@@ -255,7 +254,7 @@ fun SettingsScreen(
                             val isSelected = currentRegion.equals(code, ignoreCase = true)
                             val regInteraction = remember { MutableInteractionSource() }
                             val isRegFocused by regInteraction.collectIsFocusedAsState()
-                            val regScale by animateFloatAsState(if (isRegFocused) 1.07f else 1.0f, label = "regScale")
+                            val regScale = if (isRegFocused) 1.06f else 1.0f
 
                             val regBorderColor = when {
                                 isRegFocused -> TvFocusBorder
@@ -285,8 +284,7 @@ fun SettingsScreen(
                                     .clickable(
                                         interactionSource = regInteraction,
                                         indication = null
-                                    ) { onSetRegion(code) }
-                                    .shadow(if (isRegFocused) 10.dp else 0.dp, RoundedCornerShape(10.dp)),
+                                    ) { onSetRegion(code) },
                                 color = regBg,
                                 shape = RoundedCornerShape(10.dp)
                             ) {
