@@ -102,25 +102,13 @@ fun WatchMateTvApp(viewModel: WatchlistViewModel) {
                     }
                 }
                 is UiEvent.LaunchProviderApp -> {
-                    var launched = false
-                    if (!event.packageName.isNullOrBlank()) {
-                        val launchIntent = context.packageManager.getLaunchIntentForPackage(event.packageName)
-                        if (launchIntent != null) {
-                            try {
-                                context.startActivity(launchIntent)
-                                launched = true
-                            } catch (e: Exception) {
-                                launched = false
-                            }
-                        }
-                    }
-                    if (!launched && !event.fallbackUrl.isNullOrBlank()) {
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(event.fallbackUrl)))
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "App oder Link konnte nicht geöffnet werden.", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                    com.example.util.StreamingAppLauncher.launch(
+                        context = context,
+                        providerName = event.providerName,
+                        title = event.title,
+                        explicitCandidates = event.candidatePackages,
+                        fallbackUrl = event.fallbackUrl
+                    )
                 }
                 is UiEvent.OpenUrl -> {
                     try {

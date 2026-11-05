@@ -11,6 +11,7 @@ import com.example.data.remote.SampleDataProvider
 import com.example.data.repository.EpisodeAdvanceResult
 import com.example.data.repository.ProviderDetails
 import com.example.data.repository.WatchlistRepository
+import com.example.util.StreamingAppLauncher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -43,7 +44,12 @@ sealed class UiEvent {
     data class ShowToast(val message: String) : UiEvent()
     data class OpenUrl(val url: String) : UiEvent()
     data class PlayTrailer(val youtubeKey: String) : UiEvent()
-    data class LaunchProviderApp(val packageName: String?, val fallbackUrl: String?) : UiEvent()
+    data class LaunchProviderApp(
+        val providerName: String,
+        val title: String,
+        val candidatePackages: List<String>,
+        val fallbackUrl: String?
+    ) : UiEvent()
 }
 
 class WatchlistViewModel(
@@ -350,15 +356,19 @@ class WatchlistViewModel(
     }
 
     fun playOnProviderPlatform(item: WatchlistItem, providerName: String) {
+        val candidates = StreamingAppLauncher.getCandidatePackages(providerName)
         val known = KnownProviders.ALL_PROVIDERS.firstOrNull { prov ->
             prov.tmdbProviderNames.any { providerName.contains(it, ignoreCase = true) } ||
                     providerName.contains(prov.name, ignoreCase = true)
         }
+        val fallback = known?.webFallbackUrl ?: "https://www.google.com/search?q=${item.title}+${providerName}+streamen"
         viewModelScope.launch {
             _events.emit(
                 UiEvent.LaunchProviderApp(
-                    packageName = known?.appPackageName,
-                    fallbackUrl = known?.webFallbackUrl ?: "https://www.google.com/search?q=${item.title}+${providerName}+streamen"
+                    providerName = providerName,
+                    title = item.title,
+                    candidatePackages = candidates,
+                    fallbackUrl = fallback
                 )
             )
         }

@@ -15,6 +15,74 @@
         android:name="android.hardware.microphone"
         android:required="false" />
 
+    <!-- Package visibility declarations for Android 11+ to launch TV streaming apps directly -->
+    <queries>
+        <!-- Amazon Prime Video TV packages -->
+        <package android:name="com.amazon.amazonvideo.livingroom" />
+        <package android:name="com.amazon.avod.thirdpartyclient" />
+        <package android:name="com.amazon.amazonvideo.livingroom.nvidia" />
+        <package android:name="com.amazon.aiv.eu" />
+        <package android:name="com.amazon.avod" />
+        <package android:name="com.amazon.mp3" />
+
+        <!-- Netflix TV packages -->
+        <package android:name="com.netflix.ninja" />
+        <package android:name="com.netflix.mediaclient" />
+
+        <!-- Disney+ -->
+        <package android:name="com.disney.disneyplus" />
+
+        <!-- Apple TV -->
+        <package android:name="com.apple.atve.androidtv.appletv" />
+        <package android:name="com.apple.atve.sony.appletv" />
+
+        <!-- WOW / Sky -->
+        <package android:name="de.sky.online" />
+        <package android:name="com.bskyb.nowtv.beta" />
+
+        <!-- YouTube TV / standard -->
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.google.android.youtube" />
+
+        <!-- RTL+ -->
+        <package android:name="de.rtli.tvnow" />
+        <package android:name="de.rtli.tvnow.firetv" />
+
+        <!-- Joyn -->
+        <package android:name="de.joyn.android.tv" />
+        <package android:name="de.prosiebensat1digital.seventv" />
+
+        <!-- Paramount+ -->
+        <package android:name="com.paramountplus.androidtv" />
+        <package android:name="com.cbs.app" />
+        <package android:name="com.cbs.ott" />
+
+        <!-- Crunchyroll -->
+        <package android:name="com.crunchyroll.crunchyroid" />
+
+        <!-- Intent queries for media schemes -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="primevideo" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="aiv" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="netflix" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="disneyplus" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
