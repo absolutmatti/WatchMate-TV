@@ -77,9 +77,17 @@ object KnownProviders {
             id = "joyn",
             name = "Joyn",
             iconName = "joyn",
-            tmdbProviderNames = listOf("Joyn", "Joyn Plus+"),
-            appPackageName = "de.prosiebensat1digital.seventv",
+            tmdbProviderNames = listOf("Joyn", "Joyn Plus+", "Joyn Plus"),
+            appPackageName = "de.joyn.android.tv",
             webFallbackUrl = "https://www.joyn.de"
+        ),
+        StreamingProvider(
+            id = "magentatv",
+            name = "MagentaTV",
+            iconName = "magentatv",
+            tmdbProviderNames = listOf("MagentaTV", "Magenta TV", "Telekom"),
+            appPackageName = "de.telekom.magentatv.atv",
+            webFallbackUrl = "https://web.magentatv.de"
         ),
         StreamingProvider(
             id = "crunchyroll",

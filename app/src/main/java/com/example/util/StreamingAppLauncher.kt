@@ -2,6 +2,7 @@ package com.example.util
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -32,6 +33,18 @@ object StreamingAppLauncher {
                 "com.apple.atve.androidtv.appletv",
                 "com.apple.atve.sony.appletv"
             )
+            lower.contains("magenta") || lower.contains("telekom") -> listOf(
+                "de.telekom.magentatv.atv",
+                "de.telekom.magentatv",
+                "de.telekom.magentatv.mobile",
+                "de.telekom.ott.atv",
+                "com.telekom.magentatv",
+                "de.telekom.magentatv.firetv"
+            )
+            lower.contains("joyn") -> listOf(
+                "de.joyn.android.tv",
+                "de.prosiebensat1digital.seventv"
+            )
             lower.contains("wow") || lower.contains("sky") -> listOf(
                 "de.sky.online",
                 "com.bskyb.nowtv.beta"
@@ -40,16 +53,14 @@ object StreamingAppLauncher {
                 "de.rtli.tvnow",
                 "de.rtli.tvnow.firetv"
             )
-            lower.contains("joyn") -> listOf(
-                "de.joyn.android.tv",
-                "de.prosiebensat1digital.seventv"
-            )
             lower.contains("paramount") -> listOf(
                 "com.paramountplus.androidtv",
                 "com.cbs.app",
                 "com.cbs.ott"
             )
-            lower.contains("youtube") -> listOf(
+            lower.contains("youtube") || lower.contains("smarttube") -> listOf(
+                "org.smarttube.beta",
+                "com.teamsmart.videomanager.tv",
                 "com.google.android.youtube.tv",
                 "com.google.android.youtube"
             )
@@ -58,6 +69,71 @@ object StreamingAppLauncher {
             )
             else -> emptyList()
         }
+    }
+
+    /**
+     * Resolves the proper launcher Intent for Android TV apps.
+     * CRITICAL: Android TV apps (e.g. Amazon Prime Video, MagentaTV) use LEANBACK_LAUNCHER,
+     * so getLaunchIntentForPackage returns null unless getLeanbackLaunchIntentForPackage is used!
+     */
+    fun getAppLaunchIntent(pm: PackageManager, packageName: String): Intent? {
+        // 1. Android TV Leanback launcher (essential for TV apps)
+        try {
+            val leanbackIntent = pm.getLeanbackLaunchIntentForPackage(packageName)
+            if (leanbackIntent != null) {
+                return leanbackIntent
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error checking getLeanbackLaunchIntentForPackage: ${e.message}")
+        }
+
+        // 2. Standard phone/tablet launcher
+        try {
+            val standardIntent = pm.getLaunchIntentForPackage(packageName)
+            if (standardIntent != null) {
+                return standardIntent
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error checking getLaunchIntentForPackage: ${e.message}")
+        }
+
+        // 3. Explicit Leanback Activity resolution
+        try {
+            val queryIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                setPackage(packageName)
+            }
+            val resolves = pm.queryIntentActivities(queryIntent, 0)
+            if (resolves.isNotEmpty()) {
+                val act = resolves[0].activityInfo
+                return Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                    setClassName(act.packageName, act.name)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error resolving explicit leanback activity: ${e.message}")
+        }
+
+        // 4. Explicit standard Activity resolution
+        try {
+            val queryIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+                setPackage(packageName)
+            }
+            val resolves = pm.queryIntentActivities(queryIntent, 0)
+            if (resolves.isNotEmpty()) {
+                val act = resolves[0].activityInfo
+                return Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                    setClassName(act.packageName, act.name)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error resolving explicit standard activity: ${e.message}")
+        }
+
+        return null
     }
 
     fun launch(
@@ -72,19 +148,19 @@ object StreamingAppLauncher {
 
         Log.d(TAG, "Attempting to launch app for provider: '$providerName' (candidates: $candidates)")
 
-        // 1. Try direct package launch intents from candidate list
+        // 1. Try direct package launch with Leanback / Standard intent
         for (pkg in candidates) {
-            try {
-                val launchIntent = pm.getLaunchIntentForPackage(pkg)
-                if (launchIntent != null) {
-                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-                    context.startActivity(launchIntent)
-                    Toast.makeText(context, "Öffne $providerName App...", Toast.LENGTH_SHORT).show()
+            val intent = getAppLaunchIntent(pm, pkg)
+            if (intent != null) {
+                try {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+                    context.startActivity(intent)
+                    Toast.makeText(context, "Öffne $providerName...", Toast.LENGTH_SHORT).show()
                     Log.d(TAG, "Successfully launched package: $pkg")
                     return
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed starting intent for $pkg: ${e.message}")
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed launching candidate package $pkg: ${e.message}")
             }
         }
 
@@ -97,6 +173,8 @@ object StreamingAppLauncher {
                 when {
                     lowerProvider.contains("prime") || lowerProvider.contains("amazon") ->
                         p.contains("amazonvideo") || p.contains("primevideo") || p.contains("avod")
+                    lowerProvider.contains("magenta") || lowerProvider.contains("telekom") ->
+                        p.contains("magentatv") || p.contains("telekom.ott")
                     lowerProvider.contains("netflix") -> p.contains("netflix")
                     lowerProvider.contains("disney") -> p.contains("disneyplus")
                     lowerProvider.contains("apple") -> p.contains("atve") || (p.contains("apple") && p.contains("tv"))
@@ -109,11 +187,11 @@ object StreamingAppLauncher {
             }
 
             if (matchedPackage != null) {
-                val launchIntent = pm.getLaunchIntentForPackage(matchedPackage.packageName)
-                if (launchIntent != null) {
-                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-                    context.startActivity(launchIntent)
-                    Toast.makeText(context, "Öffne $providerName App...", Toast.LENGTH_SHORT).show()
+                val intent = getAppLaunchIntent(pm, matchedPackage.packageName)
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+                    context.startActivity(intent)
+                    Toast.makeText(context, "Öffne $providerName...", Toast.LENGTH_SHORT).show()
                     Log.d(TAG, "Successfully launched fuzzy matched package: ${matchedPackage.packageName}")
                     return
                 }
@@ -144,7 +222,7 @@ object StreamingAppLauncher {
             }
         }
 
-        // 4. If the app is genuinely not installed on the TV, try Google Play Store on TV
+        // 4. If the app is genuinely not installed on the TV, open Google Play Store directly on TV
         val primaryPackage = candidates.firstOrNull()
         if (primaryPackage != null) {
             try {
@@ -152,7 +230,7 @@ object StreamingAppLauncher {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 if (storeIntent.resolveActivity(pm) != null) {
-                    Toast.makeText(context, "$providerName App nicht installiert. Öffne Play Store...", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "$providerName App nicht gefunden. Öffne Play Store...", Toast.LENGTH_LONG).show()
                     context.startActivity(storeIntent)
                     return
                 }
@@ -169,8 +247,63 @@ object StreamingAppLauncher {
                 }
                 context.startActivity(webIntent)
             } catch (e: Exception) {
-                Toast.makeText(context, "$providerName App konnte nicht gefunden werden.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "$providerName App konnte nicht geöffnet werden.", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    /**
+     * Dedicated YouTube & SmartTube trailer launcher.
+     * Supports third-party SmartTube Beta ('org.smarttube.beta') as requested by user.
+     */
+    fun launchTrailer(context: Context, youtubeKey: String) {
+        val pm = context.packageManager
+        val ytPackages = listOf(
+            "org.smarttube.beta",
+            "com.teamsmart.videomanager.tv",
+            "com.google.android.youtube.tv",
+            "com.google.android.youtube"
+        )
+        val videoUrl = "https://www.youtube.com/watch?v=$youtubeKey"
+
+        // 1. Try launching directly with installed YouTube / SmartTube app
+        for (pkg in ytPackages) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl)).apply {
+                    setPackage(pkg)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                if (intent.resolveActivity(pm) != null) {
+                    context.startActivity(intent)
+                    Toast.makeText(context, "Trailer wird abgespielt...", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Trailer launch with package $pkg failed: ${e.message}")
+            }
+        }
+
+        // 2. Try vnd.youtube scheme
+        try {
+            val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$youtubeKey")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            if (appIntent.resolveActivity(pm) != null) {
+                context.startActivity(appIntent)
+                return
+            }
+        } catch (e: Exception) {
+            // ignore
+        }
+
+        // 3. Fallback: standard web intent
+        try {
+            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(webIntent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Trailer konnte nicht geöffnet werden.", Toast.LENGTH_SHORT).show()
         }
     }
 }

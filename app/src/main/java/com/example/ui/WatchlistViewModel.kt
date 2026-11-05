@@ -237,6 +237,10 @@ class WatchlistViewModel(
             val item = repository.fetchOrCreateItem(searchItem)
             _selectedItem.value = item
             _isSearching.value = false
+            val refreshed = repository.refreshProviders(item)
+            if (_selectedItem.value?.id == item.id) {
+                _selectedItem.value = refreshed
+            }
         }
     }
 

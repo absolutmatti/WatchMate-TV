@@ -103,7 +103,7 @@ fun DetailScreen(
         emptyList()
     }
 
-    val flatrateProviders = allProviders.filter { it.type == "flatrate" || it.type == "sub" }
+    val flatrateProviders = allProviders.filter { it.type == "flatrate" || it.type == "sub" || it.type == "ads" || it.type == "free" }
         .distinctBy { it.name }
     val buyRentProviders = allProviders.filter { it.type == "buy_rent" }
         .distinctBy { it.name }
@@ -477,7 +477,7 @@ fun StreamingProvidersSection(
             // 1. Flatrate Streaming Platforms (Im Abo ansehen)
             if (flatrateProviders.isNotEmpty()) {
                 Text(
-                    text = "🍿 Flatrate-Streaming (Im Abo ansehen):",
+                    text = "🍿 Streaming & Mediatheken:",
                     color = CyanNeon,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
@@ -605,6 +605,19 @@ fun TvProviderCard(
                     Text(
                         text = "In deinem Abo ✓",
                         color = Color.Black,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
+            } else if (provider.type == "ads" || provider.type == "free") {
+                Surface(
+                    color = Color(0x3310B981),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = if (provider.type == "free") "Kostenlos" else "Gratis (Werbung)",
+                        color = GreenWatched,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)

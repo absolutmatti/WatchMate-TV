@@ -22,10 +22,16 @@ sealed class EpisodeAdvanceResult {
     data class SeriesFinished(val item: WatchlistItem) : EpisodeAdvanceResult()
 }
 
+data class ProviderEntry(
+    val name: String,
+    val logo: String?,
+    val type: String // "flatrate", "ads", "free", "buy_rent"
+)
+
 data class ProviderDetails(
-    val inUserSubscriptions: List<Pair<String, String?>>, // Name, LogoUrl
-    val otherFlatrates: List<Pair<String, String?>>,
-    val buyOrRent: List<Pair<String, String?>>,
+    val inUserSubscriptions: List<ProviderEntry>,
+    val otherFlatrates: List<ProviderEntry>,
+    val buyOrRent: List<ProviderEntry>,
     val primaryProviderName: String?,
     val primaryProviderLogo: String?,
     val watchLink: String?
@@ -322,31 +328,48 @@ class WatchlistRepository(
             ?: return ProviderDetails(emptyList(), emptyList(), emptyList(), null, null, null)
 
         val userSubs = preferences.subscribedProviders.value
-        val inUserSubs = mutableListOf<Pair<String, String?>>()
-        val otherFlats = mutableListOf<Pair<String, String?>>()
+        val inUserSubs = mutableListOf<ProviderEntry>()
+        val otherFlats = mutableListOf<ProviderEntry>()
 
-        country.flatrate?.forEach { prov ->
+        // 1. Flatrate
+        country.flatrate.orEmpty().forEach { prov ->
             val isUserSub = KnownProviders.matchesAny(prov.providerName, userSubs)
-            if (isUserSub) {
-                inUserSubs.add(prov.providerName to prov.fullLogoUrl)
-            } else {
-                otherFlats.add(prov.providerName to prov.fullLogoUrl)
-            }
+            val entry = ProviderEntry(prov.providerName, prov.fullLogoUrl, "flatrate")
+            if (isUserSub) inUserSubs.add(entry) else otherFlats.add(entry)
         }
 
-        val buyRent = mutableListOf<Pair<String, String?>>()
+        // 2. Free (Mediatheken, etc.)
+        country.free.orEmpty().forEach { prov ->
+            val isUserSub = KnownProviders.matchesAny(prov.providerName, userSubs)
+            val entry = ProviderEntry(prov.providerName, prov.fullLogoUrl, "free")
+            if (isUserSub) inUserSubs.add(entry) else otherFlats.add(entry)
+        }
+
+        // 3. Ads (e.g. Joyn, Freevee, Pluto TV, RTL+ Free)
+        country.ads.orEmpty().forEach { prov ->
+            val isUserSub = KnownProviders.matchesAny(prov.providerName, userSubs)
+            val entry = ProviderEntry(prov.providerName, prov.fullLogoUrl, "ads")
+            if (isUserSub) inUserSubs.add(entry) else otherFlats.add(entry)
+        }
+
+        val inUserSubsDistinct = inUserSubs.distinctBy { it.name }
+        val otherFlatsDistinct = otherFlats
+            .filterNot { other -> inUserSubsDistinct.any { it.name.equals(other.name, ignoreCase = true) } }
+            .distinctBy { it.name }
+
+        val buyRent = mutableListOf<ProviderEntry>()
         (country.buy.orEmpty() + country.rent.orEmpty()).distinctBy { it.providerId }.forEach { prov ->
-            buyRent.add(prov.providerName to prov.fullLogoUrl)
+            buyRent.add(ProviderEntry(prov.providerName, prov.fullLogoUrl, "buy_rent"))
         }
 
-        val primary = inUserSubs.firstOrNull() ?: otherFlats.firstOrNull() ?: buyRent.firstOrNull()
+        val primary = inUserSubsDistinct.firstOrNull() ?: otherFlatsDistinct.firstOrNull() ?: buyRent.firstOrNull()
 
         return ProviderDetails(
-            inUserSubscriptions = inUserSubs,
-            otherFlatrates = otherFlats,
+            inUserSubscriptions = inUserSubsDistinct,
+            otherFlatrates = otherFlatsDistinct,
             buyOrRent = buyRent,
-            primaryProviderName = primary?.first,
-            primaryProviderLogo = primary?.second,
+            primaryProviderName = primary?.name,
+            primaryProviderLogo = primary?.logo,
             watchLink = country.link
         )
     }
@@ -378,13 +401,13 @@ class WatchlistRepository(
 
     private fun serializeProvidersJson(details: ProviderDetails): String {
         val array = JSONArray()
-        // Save flatrate providers
-        (details.inUserSubscriptions + details.otherFlatrates).distinctBy { it.first }.forEach { (name, logo) ->
-            array.put(JSONObject().put("name", name).put("logo", logo).put("type", "flatrate"))
+        // Save flatrate / ads / free streaming providers
+        (details.inUserSubscriptions + details.otherFlatrates).distinctBy { it.name }.forEach { entry ->
+            array.put(JSONObject().put("name", entry.name).put("logo", entry.logo).put("type", entry.type))
         }
         // Save buy/rent providers
-        details.buyOrRent.distinctBy { it.first }.forEach { (name, logo) ->
-            array.put(JSONObject().put("name", name).put("logo", logo).put("type", "buy_rent"))
+        details.buyOrRent.distinctBy { it.name }.forEach { entry ->
+            array.put(JSONObject().put("name", entry.name).put("logo", entry.logo).put("type", entry.type))
         }
         return array.toString()
     }

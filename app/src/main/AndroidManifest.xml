@@ -40,9 +40,19 @@
         <package android:name="de.sky.online" />
         <package android:name="com.bskyb.nowtv.beta" />
 
-        <!-- YouTube TV / standard -->
+        <!-- YouTube TV / standard & SmartTube -->
+        <package android:name="org.smarttube.beta" />
+        <package android:name="com.teamsmart.videomanager.tv" />
         <package android:name="com.google.android.youtube.tv" />
         <package android:name="com.google.android.youtube" />
+
+        <!-- MagentaTV -->
+        <package android:name="de.telekom.magentatv.atv" />
+        <package android:name="de.telekom.magentatv" />
+        <package android:name="de.telekom.magentatv.mobile" />
+        <package android:name="de.telekom.ott.atv" />
+        <package android:name="com.telekom.magentatv" />
+        <package android:name="de.telekom.magentatv.firetv" />
 
         <!-- RTL+ -->
         <package android:name="de.rtli.tvnow" />

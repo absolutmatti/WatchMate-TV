@@ -89,17 +89,10 @@ fun WatchMateTvApp(viewModel: WatchlistViewModel) {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
                 is UiEvent.PlayTrailer -> {
-                    val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:${event.youtubeKey}"))
-                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=${event.youtubeKey}"))
-                    try {
-                        context.startActivity(appIntent)
-                    } catch (e: Exception) {
-                        try {
-                            context.startActivity(webIntent)
-                        } catch (e2: Exception) {
-                            Toast.makeText(context, "Trailer konnte nicht geöffnet werden.", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                    com.example.util.StreamingAppLauncher.launchTrailer(
+                        context = context,
+                        youtubeKey = event.youtubeKey
+                    )
                 }
                 is UiEvent.LaunchProviderApp -> {
                     com.example.util.StreamingAppLauncher.launch(
