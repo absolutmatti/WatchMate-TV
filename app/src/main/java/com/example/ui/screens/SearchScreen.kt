@@ -9,6 +9,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,6 +51,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -59,7 +62,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -79,6 +84,8 @@ import com.example.ui.theme.CyanPrimary
 import com.example.ui.theme.TvBackground
 import com.example.ui.theme.TvCardBg
 import com.example.ui.theme.TvCardFocused
+import com.example.ui.theme.TvFocusBg
+import com.example.ui.theme.TvFocusBorder
 import com.example.ui.theme.TvSurface
 
 @Composable
@@ -173,12 +180,13 @@ fun SearchScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearchSubmit(searchQuery) }),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = CyanNeon,
+                    focusedBorderColor = TvFocusBorder,
                     unfocusedBorderColor = Color(0xFF334155),
-                    focusedContainerColor = TvSurface,
+                    focusedContainerColor = TvFocusBg,
                     unfocusedContainerColor = TvSurface,
                     focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    unfocusedTextColor = Color.White,
+                    cursorColor = TvFocusBorder
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
@@ -240,22 +248,39 @@ fun SearchScreen(
             )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(quickSearches) { suggestion ->
+                    val chipInteraction = remember { MutableInteractionSource() }
+                    val isChipFocused by chipInteraction.collectIsFocusedAsState()
+                    val chipScale by animateFloatAsState(if (isChipFocused) 1.08f else 1.0f, label = "chipScale")
+
                     Surface(
                         modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = chipScale
+                                scaleY = chipScale
+                            }
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable {
+                            .border(
+                                width = if (isChipFocused) 3.dp else 1.dp,
+                                color = if (isChipFocused) TvFocusBorder else Color(0xFF334155),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .focusable(interactionSource = chipInteraction)
+                            .clickable(
+                                interactionSource = chipInteraction,
+                                indication = null
+                            ) {
                                 onQueryChanged(suggestion)
                                 onSearchSubmit(suggestion)
                             },
-                        color = TvCardBg,
+                        color = if (isChipFocused) TvFocusBg else TvCardBg,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             text = suggestion,
-                            color = CyanNeon,
+                            color = if (isChipFocused) TvFocusBorder else CyanNeon,
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            fontWeight = if (isChipFocused) FontWeight.Bold else FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         )
                     }
                 }
@@ -264,8 +289,22 @@ fun SearchScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Search Results State
+        // Subtle non-blocking progress bar during typing/search updates
         if (isSearching) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp),
+                color = TvFocusBorder,
+                trackColor = Color(0x33FBBF24)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+        } else {
+            Spacer(modifier = Modifier.height(13.dp))
+        }
+
+        // Search Results State: Never destroy grid while user is typing if results exist!
+        if (isSearching && searchResults.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -273,7 +312,7 @@ fun SearchScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = CyanNeon)
+                    CircularProgressIndicator(color = TvFocusBorder)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Suche bei TMDb...", color = Color.Gray, fontSize = 14.sp)
                 }
@@ -339,12 +378,22 @@ fun SearchResultCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.08f else 1.0f,
+        animationSpec = tween(durationMillis = 180),
+        label = "searchCardScale"
+    )
+
     val posterUrl = item.posterPath?.let {
-        if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w500$it"
+        if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w342$it"
     }
 
     Column(
         modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .padding(4.dp)
             .width(160.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -355,8 +404,8 @@ fun SearchResultCard(
                 .aspectRatio(2f / 3f)
                 .clip(RoundedCornerShape(12.dp))
                 .border(
-                    width = if (isFocused) 3.dp else 1.dp,
-                    color = if (isFocused) CyanNeon else Color(0xFF334155),
+                    width = if (isFocused) 4.dp else 1.dp,
+                    color = if (isFocused) TvFocusBorder else Color(0xFF334155),
                     shape = RoundedCornerShape(12.dp)
                 )
                 .focusable(interactionSource = interactionSource)
@@ -365,9 +414,10 @@ fun SearchResultCard(
                     indication = null,
                     onClick = onClick
                 )
+                .shadow(if (isFocused) 16.dp else 2.dp, RoundedCornerShape(12.dp))
                 .testTag("search_card_${item.id}"),
             colors = CardDefaults.cardColors(
-                containerColor = if (isFocused) TvCardFocused else TvCardBg
+                containerColor = if (isFocused) TvFocusBg else TvCardBg
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -476,9 +526,9 @@ fun SearchResultCard(
 
         Text(
             text = item.displayTitle,
-            color = if (isFocused) CyanNeon else Color.White,
+            color = if (isFocused) TvFocusBorder else Color.White,
             fontSize = 13.sp,
-            fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = if (isFocused) FontWeight.ExtraBold else FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,

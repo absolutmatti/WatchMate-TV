@@ -86,7 +86,7 @@ object KnownProviders {
             name = "MagentaTV",
             iconName = "magentatv",
             tmdbProviderNames = listOf("MagentaTV", "Magenta TV", "Telekom"),
-            appPackageName = "de.telekom.magentatv.atv",
+            appPackageName = "de.telekom.magentatv.tv",
             webFallbackUrl = "https://web.magentatv.de"
         ),
         StreamingProvider(

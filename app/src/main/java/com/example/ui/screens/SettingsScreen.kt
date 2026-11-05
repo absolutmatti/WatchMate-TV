@@ -51,12 +51,20 @@ import androidx.compose.ui.unit.sp
 import com.example.data.preferences.KnownProviders
 import com.example.ui.NavTab
 import com.example.ui.components.TvButton
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.theme.AmberAccent
 import com.example.ui.theme.CyanNeon
 import com.example.ui.theme.CyanPrimary
 import com.example.ui.theme.GreenWatched
 import com.example.ui.theme.TvBackground
 import com.example.ui.theme.TvCardBg
+import com.example.ui.theme.TvFocusBg
+import com.example.ui.theme.TvFocusBorder
 import com.example.ui.theme.TvSurface
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -145,17 +153,42 @@ fun SettingsScreen(
                     ) {
                         KnownProviders.ALL_PROVIDERS.forEach { provider ->
                             val isChecked = subscribedProviders.contains(provider.id)
+                            val provInteraction = remember { MutableInteractionSource() }
+                            val isProvFocused by provInteraction.collectIsFocusedAsState()
+                            val chipScale by animateFloatAsState(if (isProvFocused) 1.07f else 1.0f, label = "provScale")
+
+                            val chipBorderColor = when {
+                                isProvFocused -> TvFocusBorder
+                                isChecked -> CyanNeon
+                                else -> Color(0xFF334155)
+                            }
+                            val chipBorderWidth = if (isProvFocused) 3.5.dp else if (isChecked) 2.dp else 1.dp
+                            val chipBg = when {
+                                isProvFocused -> TvFocusBg
+                                isChecked -> Color(0xFF1E2D4A)
+                                else -> TvCardBg
+                            }
+
                             Surface(
                                 modifier = Modifier
+                                    .graphicsLayer {
+                                        scaleX = chipScale
+                                        scaleY = chipScale
+                                    }
                                     .clip(RoundedCornerShape(10.dp))
                                     .border(
-                                        width = if (isChecked) 2.dp else 1.dp,
-                                        color = if (isChecked) CyanNeon else Color(0xFF334155),
+                                        width = chipBorderWidth,
+                                        color = chipBorderColor,
                                         shape = RoundedCornerShape(10.dp)
                                     )
-                                    .clickable { onToggleProvider(provider.id) }
+                                    .focusable(interactionSource = provInteraction)
+                                    .clickable(
+                                        interactionSource = provInteraction,
+                                        indication = null
+                                    ) { onToggleProvider(provider.id) }
+                                    .shadow(if (isProvFocused) 10.dp else 0.dp, RoundedCornerShape(10.dp))
                                     .testTag("provider_check_${provider.id}"),
-                                color = if (isChecked) Color(0xFF1E2D4A) else TvCardBg,
+                                color = chipBg,
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Row(
@@ -166,15 +199,15 @@ fun SettingsScreen(
                                         checked = isChecked,
                                         onCheckedChange = { onToggleProvider(provider.id) },
                                         colors = CheckboxDefaults.colors(
-                                            checkedColor = CyanNeon,
+                                            checkedColor = if (isProvFocused) TvFocusBorder else CyanNeon,
                                             checkmarkColor = Color.Black
                                         )
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = provider.name,
-                                        color = if (isChecked) Color.White else Color.LightGray,
-                                        fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isProvFocused) TvFocusBorder else if (isChecked) Color.White else Color.LightGray,
+                                        fontWeight = if (isChecked || isProvFocused) FontWeight.Bold else FontWeight.Medium,
                                         fontSize = 14.sp
                                     )
                                 }
@@ -220,16 +253,41 @@ fun SettingsScreen(
                             "CH" to "🇨🇭 Schweiz"
                         ).forEach { (code, label) ->
                             val isSelected = currentRegion.equals(code, ignoreCase = true)
+                            val regInteraction = remember { MutableInteractionSource() }
+                            val isRegFocused by regInteraction.collectIsFocusedAsState()
+                            val regScale by animateFloatAsState(if (isRegFocused) 1.07f else 1.0f, label = "regScale")
+
+                            val regBorderColor = when {
+                                isRegFocused -> TvFocusBorder
+                                isSelected -> AmberAccent
+                                else -> Color(0xFF334155)
+                            }
+                            val regBorderWidth = if (isRegFocused) 3.5.dp else if (isSelected) 2.dp else 1.dp
+                            val regBg = when {
+                                isRegFocused -> TvFocusBg
+                                isSelected -> Color(0xFF2C2416)
+                                else -> TvCardBg
+                            }
+
                             Surface(
                                 modifier = Modifier
+                                    .graphicsLayer {
+                                        scaleX = regScale
+                                        scaleY = regScale
+                                    }
                                     .clip(RoundedCornerShape(10.dp))
                                     .border(
-                                        width = if (isSelected) 2.dp else 1.dp,
-                                        color = if (isSelected) AmberAccent else Color(0xFF334155),
+                                        width = regBorderWidth,
+                                        color = regBorderColor,
                                         shape = RoundedCornerShape(10.dp)
                                     )
-                                    .clickable { onSetRegion(code) },
-                                color = if (isSelected) Color(0xFF2C2416) else TvCardBg,
+                                    .focusable(interactionSource = regInteraction)
+                                    .clickable(
+                                        interactionSource = regInteraction,
+                                        indication = null
+                                    ) { onSetRegion(code) }
+                                    .shadow(if (isRegFocused) 10.dp else 0.dp, RoundedCornerShape(10.dp)),
+                                color = regBg,
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Row(
@@ -240,15 +298,15 @@ fun SettingsScreen(
                                         Icon(
                                             imageVector = Icons.Default.CheckCircle,
                                             contentDescription = null,
-                                            tint = AmberAccent,
+                                            tint = if (isRegFocused) TvFocusBorder else AmberAccent,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                     }
                                     Text(
                                         text = label,
-                                        color = if (isSelected) AmberAccent else Color.White,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isRegFocused) TvFocusBorder else if (isSelected) AmberAccent else Color.White,
+                                        fontWeight = if (isSelected || isRegFocused) FontWeight.Bold else FontWeight.Medium,
                                         fontSize = 14.sp
                                     )
                                 }

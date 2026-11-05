@@ -34,6 +34,7 @@ object StreamingAppLauncher {
                 "com.apple.atve.sony.appletv"
             )
             lower.contains("magenta") || lower.contains("telekom") -> listOf(
+                "de.telekom.magentatv.tv",
                 "de.telekom.magentatv.atv",
                 "de.telekom.magentatv",
                 "de.telekom.magentatv.mobile",
@@ -51,7 +52,9 @@ object StreamingAppLauncher {
             )
             lower.contains("rtl") || lower.contains("tvnow") -> listOf(
                 "de.rtli.tvnow",
-                "de.rtli.tvnow.firetv"
+                "de.rtli.tvnow.firetv",
+                "de.rtl.plus",
+                "de.rtli.tvnow.androidtv"
             )
             lower.contains("paramount") -> listOf(
                 "com.paramountplus.androidtv",
@@ -179,7 +182,8 @@ object StreamingAppLauncher {
                     lowerProvider.contains("disney") -> p.contains("disneyplus")
                     lowerProvider.contains("apple") -> p.contains("atve") || (p.contains("apple") && p.contains("tv"))
                     lowerProvider.contains("wow") || lowerProvider.contains("sky") -> p.contains("sky.online") || p.contains("nowtv")
-                    lowerProvider.contains("rtl") || lowerProvider.contains("tvnow") -> p.contains("tvnow") || p.contains("rtli")
+                    lowerProvider.contains("rtl") || lowerProvider.contains("tvnow") ->
+                        p.contains("tvnow") || p.contains("rtli") || p.contains("rtl.plus") || p.contains("de.rtl")
                     lowerProvider.contains("joyn") -> p.contains("joyn") || p.contains("seventv")
                     lowerProvider.contains("paramount") -> p.contains("paramount") || p.contains("cbs.app")
                     else -> false

@@ -62,6 +62,9 @@ import com.example.ui.theme.GreenWatched
 import com.example.ui.theme.RedDropped
 import com.example.ui.theme.TvCardBg
 import com.example.ui.theme.TvCardFocused
+import com.example.ui.theme.TvFocusBg
+import com.example.ui.theme.TvFocusBorder
+import com.example.ui.theme.TvFocusBorderAccent
 
 /**
  * TV Poster Card with D-Pad focus animations, streaming provider badges,
@@ -83,15 +86,15 @@ fun TvPosterCard(
 
     // Animated scale and border on focus
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.07f else 1.0f,
+        targetValue = if (isFocused) 1.08f else 1.0f,
         animationSpec = tween(durationMillis = 180),
         label = "posterScale"
     )
 
     val borderColor by animateColorAsState(
         targetValue = when {
-            isFocused -> CyanNeon
-            isWatching -> AmberAccent
+            isFocused -> TvFocusBorder
+            isWatching -> CyanNeon
             isWatched -> GreenWatched.copy(alpha = 0.5f)
             else -> Color.Transparent
         },
@@ -99,7 +102,7 @@ fun TvPosterCard(
         label = "posterBorder"
     )
 
-    val borderWidth = if (isFocused) 3.5.dp else if (isWatching) 2.dp else 0.dp
+    val borderWidth = if (isFocused) 4.dp else if (isWatching) 2.dp else 0.dp
 
     Column(
         modifier = modifier
@@ -322,9 +325,9 @@ fun TvPosterCard(
         // Title under poster
         Text(
             text = item.title,
-            color = if (isFocused) CyanNeon else Color.White,
+            color = if (isFocused) TvFocusBorder else Color.White,
             fontSize = 13.sp,
-            fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = if (isFocused) FontWeight.ExtraBold else FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
@@ -348,27 +351,27 @@ fun TvButton(
     val isFocused by interactionSource.collectIsFocusedAsState()
 
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.08f else 1.0f,
+        targetValue = if (isFocused) 1.09f else 1.0f,
         animationSpec = tween(150),
         label = "btnScale"
     )
 
     val bgColor = when {
         !enabled -> Color.DarkGray
-        isFocused -> if (isPrimary) CyanNeon else TvCardFocused
+        isFocused -> if (isPrimary) TvFocusBorderAccent else TvFocusBg
         isPrimary -> CyanPrimary
         else -> TvCardBg
     }
 
     val contentColor = when {
         !enabled -> Color.Gray
-        isFocused -> if (isPrimary) Color.Black else CyanNeon
+        isFocused -> if (isPrimary) Color.Black else Color.White
         isPrimary -> Color.Black
         else -> Color.White
     }
 
     val borderStroke = if (isFocused) {
-        androidx.compose.foundation.BorderStroke(2.dp, CyanNeon)
+        androidx.compose.foundation.BorderStroke(3.5.dp, TvFocusBorder)
     } else {
         androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
     }
@@ -391,7 +394,7 @@ fun TvButton(
         contentColor = contentColor,
         shape = RoundedCornerShape(8.dp),
         border = borderStroke,
-        shadowElevation = if (isFocused) 8.dp else 2.dp
+        shadowElevation = if (isFocused) 14.dp else 2.dp
     ) {
         Box(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),

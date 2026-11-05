@@ -54,9 +54,14 @@ import com.example.ui.components.TvPosterCard
 import com.example.ui.theme.AmberAccent
 import com.example.ui.theme.CyanNeon
 import com.example.ui.theme.CyanPrimary
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.theme.TvBackground
 import com.example.ui.theme.TvCardBg
 import com.example.ui.theme.TvCardFocused
+import com.example.ui.theme.TvFocusBg
+import com.example.ui.theme.TvFocusBorder
 import com.example.ui.theme.TvSurface
 import com.example.ui.theme.TvSurfaceVariant
 
@@ -183,24 +188,29 @@ fun TvNavigationBar(
                 val isSelected = currentTab == tab
                 val interactionSource = remember { MutableInteractionSource() }
                 val isFocused by interactionSource.collectIsFocusedAsState()
+                val tabScale by animateFloatAsState(if (isFocused) 1.08f else 1.0f, label = "tabScale")
 
                 val bgColor = when {
                     isSelected -> CyanPrimary
-                    isFocused -> TvCardFocused
+                    isFocused -> TvFocusBg
                     else -> Color.Transparent
                 }
                 val textColor = when {
                     isSelected -> Color.Black
-                    isFocused -> CyanNeon
+                    isFocused -> TvFocusBorder
                     else -> Color.White
                 }
 
                 Surface(
                     modifier = Modifier
+                        .graphicsLayer {
+                            scaleX = tabScale
+                            scaleY = tabScale
+                        }
                         .clip(RoundedCornerShape(10.dp))
                         .border(
-                            width = if (isFocused) 2.dp else if (isSelected) 1.dp else 0.dp,
-                            color = if (isFocused) CyanNeon else if (isSelected) CyanPrimary else Color.Transparent,
+                            width = if (isFocused) 3.5.dp else if (isSelected) 1.dp else 0.dp,
+                            color = if (isFocused) TvFocusBorder else if (isSelected) CyanPrimary else Color.Transparent,
                             shape = RoundedCornerShape(10.dp)
                         )
                         .focusable(interactionSource = interactionSource)
@@ -209,6 +219,7 @@ fun TvNavigationBar(
                             indication = null,
                             onClick = { onTabSelected(tab) }
                         )
+                        .shadow(if (isFocused) 10.dp else 0.dp, RoundedCornerShape(10.dp))
                         .testTag("nav_tab_${tab.name}"),
                     color = bgColor,
                     shape = RoundedCornerShape(10.dp)
@@ -226,7 +237,7 @@ fun TvNavigationBar(
                             text = tab.title,
                             color = textColor,
                             fontSize = 14.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Medium
                         )
                     }
                 }

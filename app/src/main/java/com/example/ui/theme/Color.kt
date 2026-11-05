@@ -21,5 +21,10 @@ val RedDropped = Color(0xFFEF4444)
 val TextPrimary = Color(0xFFF8FAFC)
 val TextSecondary = Color(0xFF94A3B8)
 val TextMuted = Color(0xFF64748B)
-val FocusBorderColor = Color(0xFF38BDF8)
-val FocusGlowColor = Color(0x6600E5FF)
+// High-Contrast TV Focus Palette (Electric Golden Amber for instant visibility from couch)
+val TvFocusBorder = Color(0xFFFBBF24) // Bright Golden Amber: stands out boldly against dark blue/cyan backgrounds
+val TvFocusBorderAccent = Color(0xFFFACC15)
+val TvFocusBg = Color(0xFF22385C) // Rich elevated container background when focused
+val TvFocusGlow = Color(0x99FBBF24)
+val FocusBorderColor = Color(0xFFFBBF24)
+val FocusGlowColor = Color(0x99FBBF24)

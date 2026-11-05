@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.local.WatchlistItem
 import com.example.ui.FilterState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.theme.AmberAccent
 import com.example.ui.theme.CyanNeon
 import com.example.ui.theme.CyanPrimary
@@ -56,6 +59,8 @@ import com.example.ui.theme.GreenWatched
 import com.example.ui.theme.RedDropped
 import com.example.ui.theme.TvCardBg
 import com.example.ui.theme.TvCardFocused
+import com.example.ui.theme.TvFocusBg
+import com.example.ui.theme.TvFocusBorder
 import com.example.ui.theme.TvSurface
 import com.example.ui.theme.TvSurfaceVariant
 
@@ -228,24 +233,29 @@ fun FilterChip(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val chipScale by animateFloatAsState(if (isFocused) 1.08f else 1.0f, label = "filterChipScale")
 
     val bgColor = when {
+        isFocused -> TvFocusBg
         isSelected -> CyanPrimary
-        isFocused -> TvSurfaceVariant
         else -> TvCardBg
     }
     val textColor = when {
+        isFocused -> TvFocusBorder
         isSelected -> Color.Black
-        isFocused -> CyanNeon
         else -> Color.White
     }
 
     Surface(
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = chipScale
+                scaleY = chipScale
+            }
             .clip(RoundedCornerShape(8.dp))
             .border(
-                width = if (isFocused || isSelected) 1.5.dp else 1.dp,
-                color = if (isFocused) CyanNeon else if (isSelected) CyanPrimary else Color(0xFF334155),
+                width = if (isFocused) 3.5.dp else if (isSelected) 1.5.dp else 1.dp,
+                color = if (isFocused) TvFocusBorder else if (isSelected) CyanPrimary else Color(0xFF334155),
                 shape = RoundedCornerShape(8.dp)
             )
             .focusable(interactionSource = interactionSource)
@@ -253,7 +263,8 @@ fun FilterChip(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            ),
+            )
+            .shadow(if (isFocused) 8.dp else 0.dp, RoundedCornerShape(8.dp)),
         color = bgColor,
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -261,7 +272,7 @@ fun FilterChip(
             text = label,
             color = textColor,
             fontSize = 13.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )
     }
@@ -308,19 +319,43 @@ fun StatusChangeDialog(
                 statuses.forEach { (statusKey, pair) ->
                     val (label, color) = pair
                     val isCurrent = item.status == statusKey
+                    val itemInteraction = remember { MutableInteractionSource() }
+                    val isItemFocused by itemInteraction.collectIsFocusedAsState()
+                    val itemScale by animateFloatAsState(if (isItemFocused) 1.05f else 1.0f, label = "statusScale")
+
+                    val itemBorderColor = when {
+                        isItemFocused -> TvFocusBorder
+                        isCurrent -> CyanNeon
+                        else -> Color(0xFF334155)
+                    }
+                    val itemBorderWidth = if (isItemFocused) 3.5.dp else if (isCurrent) 2.dp else 1.dp
+                    val itemBg = when {
+                        isItemFocused -> TvFocusBg
+                        isCurrent -> TvCardFocused
+                        else -> TvCardBg
+                    }
 
                     Surface(
                         modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = itemScale
+                                scaleY = itemScale
+                            }
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .border(
-                                width = if (isCurrent) 2.dp else 1.dp,
-                                color = if (isCurrent) CyanNeon else Color(0xFF334155),
+                                width = itemBorderWidth,
+                                color = itemBorderColor,
                                 shape = RoundedCornerShape(8.dp)
                             )
-                            .clickable { onStatusSelected(statusKey) },
-                        color = if (isCurrent) TvCardFocused else TvCardBg,
+                            .focusable(interactionSource = itemInteraction)
+                            .clickable(
+                                interactionSource = itemInteraction,
+                                indication = null
+                            ) { onStatusSelected(statusKey) }
+                            .shadow(if (isItemFocused) 8.dp else 0.dp, RoundedCornerShape(8.dp)),
+                        color = itemBg,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(
@@ -330,15 +365,15 @@ fun StatusChangeDialog(
                         ) {
                             Text(
                                 text = label,
-                                color = color,
+                                color = if (isItemFocused) TvFocusBorder else color,
                                 fontSize = 14.sp,
-                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (isCurrent || isItemFocused) FontWeight.Bold else FontWeight.Normal
                             )
                             if (isCurrent) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    tint = CyanNeon,
+                                    tint = if (isItemFocused) TvFocusBorder else CyanNeon,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }

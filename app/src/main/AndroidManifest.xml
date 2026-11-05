@@ -47,6 +47,7 @@
         <package android:name="com.google.android.youtube" />
 
         <!-- MagentaTV -->
+        <package android:name="de.telekom.magentatv.tv" />
         <package android:name="de.telekom.magentatv.atv" />
         <package android:name="de.telekom.magentatv" />
         <package android:name="de.telekom.magentatv.mobile" />
@@ -57,6 +58,8 @@
         <!-- RTL+ -->
         <package android:name="de.rtli.tvnow" />
         <package android:name="de.rtli.tvnow.firetv" />
+        <package android:name="de.rtl.plus" />
+        <package android:name="de.rtli.tvnow.androidtv" />
 
         <!-- Joyn -->
         <package android:name="de.joyn.android.tv" />

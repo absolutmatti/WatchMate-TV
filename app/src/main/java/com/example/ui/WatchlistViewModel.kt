@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -213,21 +215,46 @@ class WatchlistViewModel(
         }
     }
 
+    private var searchJob: Job? = null
+
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
-        if (query.length >= 2) {
-            performSearch(query)
+        searchJob?.cancel()
+        val trimmed = query.trim()
+        if (trimmed.length >= 2) {
+            searchJob = viewModelScope.launch {
+                delay(450) // 450ms debounce prevents freezing/stuttering while typing on TV keyboard
+                _isSearching.value = true
+                try {
+                    val results = repository.searchTitles(trimmed)
+                    _searchResults.value = results
+                } catch (e: Exception) {
+                    android.util.Log.e("WatchlistViewModel", "Search failed: ${e.message}")
+                } finally {
+                    _isSearching.value = false
+                }
+            }
         } else {
             _searchResults.value = emptyList()
+            _isSearching.value = false
         }
     }
 
     fun performSearch(query: String) {
-        viewModelScope.launch {
-            _isSearching.value = true
-            val results = repository.searchTitles(query)
-            _searchResults.value = results
-            _isSearching.value = false
+        searchJob?.cancel()
+        val trimmed = query.trim()
+        if (trimmed.length >= 2) {
+            searchJob = viewModelScope.launch {
+                _isSearching.value = true
+                try {
+                    val results = repository.searchTitles(trimmed)
+                    _searchResults.value = results
+                } catch (e: Exception) {
+                    android.util.Log.e("WatchlistViewModel", "Immediate search failed: ${e.message}")
+                } finally {
+                    _isSearching.value = false
+                }
+            }
         }
     }
 

@@ -63,8 +63,13 @@ import com.example.ui.theme.AmberGlow
 import com.example.ui.theme.CyanNeon
 import com.example.ui.theme.CyanPrimary
 import com.example.ui.theme.GreenWatched
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.theme.RedDropped
 import com.example.ui.theme.TvCardBg
+import com.example.ui.theme.TvFocusBg
+import com.example.ui.theme.TvFocusBorder
 import com.example.ui.theme.TvSurface
 import org.json.JSONArray
 
@@ -546,18 +551,23 @@ fun TvProviderCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val provScale by animateFloatAsState(if (isFocused) 1.08f else 1.0f, label = "provScale")
 
     val borderColor = when {
-        isFocused -> CyanNeon
+        isFocused -> TvFocusBorder
         isSubscribed -> GreenWatched
         else -> Color(0xFF334155)
     }
 
-    val borderWidth = if (isFocused) 2.5.dp else if (isSubscribed) 1.5.dp else 1.dp
-    val bgColor = if (isFocused) Color(0xFF1E2D4A) else if (isSubscribed) Color(0xFF132A26) else TvCardBg
+    val borderWidth = if (isFocused) 3.5.dp else if (isSubscribed) 1.5.dp else 1.dp
+    val bgColor = if (isFocused) TvFocusBg else if (isSubscribed) Color(0xFF132A26) else TvCardBg
 
     Surface(
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = provScale
+                scaleY = provScale
+            }
             .clip(RoundedCornerShape(10.dp))
             .border(borderWidth, borderColor, RoundedCornerShape(10.dp))
             .focusable(interactionSource = interactionSource)
@@ -565,7 +575,8 @@ fun TvProviderCard(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            ),
+            )
+            .shadow(if (isFocused) 12.dp else 2.dp, RoundedCornerShape(10.dp)),
         color = bgColor,
         shape = RoundedCornerShape(10.dp)
     ) {
@@ -589,9 +600,9 @@ fun TvProviderCard(
             // Platform Name
             Text(
                 text = provider.name,
-                color = if (isFocused) CyanNeon else Color.White,
+                color = if (isFocused) TvFocusBorder else Color.White,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = if (isFocused) FontWeight.ExtraBold else FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -646,12 +657,30 @@ fun TvVodProviderCard(
     provider: ParsedProvider,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val vodScale by animateFloatAsState(if (isFocused) 1.08f else 1.0f, label = "vodScale")
+
     Surface(
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = vodScale
+                scaleY = vodScale
+            }
             .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, Color(0xFF334155), RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
-        color = TvCardBg,
+            .border(
+                width = if (isFocused) 3.5.dp else 1.dp,
+                color = if (isFocused) TvFocusBorder else Color(0xFF334155),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .focusable(interactionSource = interactionSource)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .shadow(if (isFocused) 8.dp else 0.dp, RoundedCornerShape(8.dp)),
+        color = if (isFocused) TvFocusBg else TvCardBg,
         shape = RoundedCornerShape(8.dp)
     ) {
         Row(
@@ -671,9 +700,9 @@ fun TvVodProviderCard(
             }
             Text(
                 text = provider.name,
-                color = Color(0xFFE2E8F0),
+                color = if (isFocused) TvFocusBorder else Color(0xFFE2E8F0),
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Medium
             )
         }
     }
